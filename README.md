@@ -7,13 +7,8 @@ IRMS is an intelligent release management system that combines static code analy
 
 <img width="1918" height="878" alt="image" src="https://github.com/user-attachments/assets/6bb6d870-50f5-467b-8593-1bfa3fb8b2d0" />
 
-<img width="1918" height="872" alt="image" src="https://github.com/user-attachments/assets/f7547212-1a36-4495-8e8c-9dec5ea68ed1" />
-
-<img width="1918" height="903" alt="image" src="https://github.com/user-attachments/assets/8fc9ee63-fd3e-4c03-94ed-fb0899b572be" />
 
 
-
-![IRMS Demo](docs/demo-screenshot.png)
 *Clean UI for code analysis and risk assessment*
 
 ---
@@ -216,6 +211,12 @@ intelligent-release-management-scanner/
 ```
 
 ---
+
+
+<img width="1918" height="872" alt="image" src="https://github.com/user-attachments/assets/f7547212-1a36-4495-8e8c-9dec5ea68ed1" />
+
+<img width="1918" height="903" alt="image" src="https://github.com/user-attachments/assets/8fc9ee63-fd3e-4c03-94ed-fb0899b572be" />
+
 
 ## 🧪 Example Use Cases
 
