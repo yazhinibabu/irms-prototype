@@ -378,13 +378,13 @@ def markdown_to_pdf(markdown_path, pdf_path):
 
 def main():
     # Header
-    st.title("🔍 Intelligent Release Management Scanner (IRMS)")
+    st.title("Intelligent Release Management Scanner (IRMS)")
     st.markdown("**AI-Powered Code Analysis & Risk Assessment**")
     st.markdown("---")
     
     # Sidebar
     with st.sidebar:
-        st.header("📋 About IRMS")
+        st.header("About IRMS")
         st.markdown("""
         IRMS analyzes your Python code using:
         - **Static Analysis** (complexity, issues)
@@ -397,14 +397,14 @@ def main():
         
         st.markdown("---")
         st.markdown("**System Status**")
-        st.success("✅ Backend: Online")
-        st.info("🤖 AI Model: Gemini 2.5 Flash")
+        st.success("Backend: Online")
+        st.info("AI Model: Gemini 2.5 Flash")
     
     # ========================================================================
     # INPUT SECTION
     # ========================================================================
     
-    st.header("📂 Step 1: Upload Files")
+    st.header("Step 1: Upload Files")
     
     col1, col2 = st.columns(2)
     
@@ -428,7 +428,7 @@ def main():
     
     st.markdown("---")
     
-    st.header("💬 Step 2: Describe Changes")
+    st.header("Step 2: Describe Changes")
     
     user_query = st.text_area(
         "What improvements would you like AI to make?",
@@ -443,17 +443,17 @@ def main():
     # RUN ANALYSIS
     # ========================================================================
     
-    st.header("🚀 Step 3: Run Analysis")
+    st.header("Step 3: Run Analysis")
     
     run_button = st.button(
-        "▶️ Run IRMS Analysis",
+        "Run IRMS Analysis",
         type="primary",
         use_container_width=True,
         disabled=not uploaded_py_files
     )
     
     if not uploaded_py_files and not run_button:
-        st.info("👆 Upload Python files to begin")
+        st.info("Upload Python files to begin")
         return
     
     # ========================================================================
@@ -462,7 +462,7 @@ def main():
     
     if run_button:
         if not uploaded_py_files:
-            st.error("❌ Please upload at least one Python file")
+            st.error("Please upload at least one Python file")
             return
         
         # Create temporary directories
@@ -474,13 +474,13 @@ def main():
             docs_dir.mkdir()
             
             # Save uploaded files
-            with st.spinner("📤 Uploading files..."):
+            with st.spinner("Uploading files..."):
                 save_uploaded_files(uploaded_py_files, code_dir)
                 if uploaded_doc_files:
                     save_uploaded_files(uploaded_doc_files, docs_dir)
             
             # Run pipeline
-            with st.spinner("🔄 Running IRMS pipeline... This may take a minute."):
+            with st.spinner("Running IRMS pipeline... This may take a minute."):
                 results = run_irms_pipeline(code_dir, docs_dir, user_query)
             
             # Store in session state
@@ -500,14 +500,14 @@ def main():
                     st.code(results['error_detail'])
             return
         
-        st.success("✅ Analysis complete!")
+        st.success("Analysis complete!")
         st.markdown("---")
         
         # ====================================================================
         # OVERALL RESULTS
         # ====================================================================
         
-        st.header("📊 Overall Results")
+        st.header("Overall Results")
         
         overall = results['overall_risk']
         gate_decision = overall.get('overall_gate_decision', 'PENDING')
@@ -553,7 +553,7 @@ def main():
         # CHANGE SUMMARY
         # ====================================================================
         
-        st.header("📝 Change Summary")
+        st.header("Change Summary")
         
         total_added = 0
         total_deleted = 0
@@ -576,10 +576,10 @@ def main():
         # FILE DETAILS
         # ====================================================================
         
-        st.header("📄 File-by-File Details")
+        st.header("File-by-File Details")
         
         for filename, risk_assessment in results['risk'].items():
-            with st.expander(f"📄 {filename} - {risk_assessment['gate_decision']} (Risk: {risk_assessment['risk_score']:.1f})"):
+            with st.expander(f" {filename} - {risk_assessment['gate_decision']} (Risk: {risk_assessment['risk_score']:.1f})"):
                 
                 # Analysis
                 analysis = results['analysis'].get(filename, {})
@@ -627,7 +627,7 @@ def main():
         # DOWNLOADS
         # ====================================================================
         
-        st.header("⬇️ Downloads")
+        st.header(" Downloads")
         
         col1, col2 = st.columns(2)
         
@@ -650,7 +650,7 @@ def main():
                     report_content = f.read()
                 
                 st.download_button(
-                    label="📋 Download Report (Markdown)",
+                    label=" Download Report (Markdown)",
                     data=report_content,
                     file_name=f"IRMS_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
                     mime="text/markdown"
@@ -659,12 +659,12 @@ def main():
                 # PDF report
                 pdf_path = Path(tempfile.gettempdir()) / f"IRMS_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
                 
-                if st.button("🔄 Generate PDF Report"):
+                if st.button(" Generate PDF Report"):
                     with st.spinner("Generating PDF..."):
                         if markdown_to_pdf(results['report_path'], str(pdf_path)):
                             with open(pdf_path, 'rb') as f:
                                 st.download_button(
-                                    label="📑 Download Report (PDF)",
+                                    label=" Download Report (PDF)",
                                     data=f.read(),
                                     file_name=pdf_path.name,
                                     mime="application/pdf"
