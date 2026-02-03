@@ -1,283 +1,285 @@
-# Intelligent Release Management Scanner (IRMS)
 
-A prototype system for intelligent code analysis, modification, and release management using AI-assisted workflows.
+# 🔍 Intelligent Release Management Scanner (IRMS)
 
-## Overview
+**AI-Powered Code Analysis & Risk Assessment for Safer Software Releases**
 
-IRMS is an end-to-end Python application that ingests source code and supporting documentation, applies AI-powered analysis and modifications based on natural language queries, and generates comprehensive release-ready outputs with risk assessments.
+IRMS is an intelligent release management system that combines static code analysis, AI-driven improvements, and multi-factor risk assessment to automate release decisions with **PASS/WARN/BLOCK** gates.
 
-## Architecture
+<img width="1918" height="878" alt="image" src="https://github.com/user-attachments/assets/6bb6d870-50f5-467b-8593-1bfa3fb8b2d0" />
 
-The system follows the pipeline shown in the architecture diagram:
 
-```
-Input Sources → Ingestion & Parsing → Security & Change Analysis → 
-Product Intelligence Model → Release Analysis & Reporting → Release Outputs & Gates
-```
 
-### Key Components
+*Clean UI for code analysis and risk assessment*
 
-1. **File Ingestion** (`modules/ingestion.py`)
-   - Reads Python source files
-   - Extracts text from PDF and text documents
-   - Parses code into Abstract Syntax Trees (AST)
+---
 
-2. **Static Code Analyzer** (`modules/code_analyzer.py`)
-   - Calculates complexity metrics (cyclomatic complexity, maintainability index)
-   - Detects code issues and patterns
-   - Analyzes code structure (functions, classes, imports)
+## ✨ Features
 
-3. **AI Engine** (`modules/ai_engine.py`)
-   - Uses Claude API for intelligent code analysis
-   - Applies modifications based on user queries
-   - Generates explanations for all changes
+- 🔍 **Static Code Analysis** - Cyclomatic complexity, maintainability index, code smell detection
+- 🤖 **AI-Powered Improvements** - Google Gemini suggests code enhancements based on natural language queries
+- 📊 **Risk Assessment** - Multi-factor scoring (complexity, change volume, critical functions, issue severity)
+- 🚦 **Release Gates** - Automated PASS/WARN/BLOCK decisions for deployment pipelines
+- 📈 **Change Tracking** - Detailed diffs with line-by-line statistics
+- 📄 **Comprehensive Reports** - Markdown and PDF reports with actionable recommendations
+- 🎨 **Modern UI** - Clean Streamlit interface with interactive visualizations
 
-4. **Change Detector** (`modules/change_detector.py`)
-   - Tracks differences between original and modified code
-   - Generates unified diffs
-   - Calculates change statistics
+---
 
-5. **Risk Assessor** (`modules/risk_assessor.py`)
-   - Scores risk based on multiple factors
-   - Makes gate decisions (PASS/WARN/BLOCK)
-   - Generates recommendations
-
-6. **Report Generator** (`modules/report_generator.py`)
-   - Creates comprehensive markdown reports
-   - Includes all analysis results and recommendations
-   - Provides executive summary and detailed breakdowns
-
-## Installation
+## 🚀 Quick Start
 
 ### Prerequisites
 
 - Python 3.8 or higher
-- Google API key for Gemini (FREE tier available)
+- Google API key for Gemini (free tier available)
 
-### Setup
-
-1. Clone or download the project:
+### Installation
 ```bash
-cd irms_prototype
-```
+# Clone the repository
+git clone https://github.com/yourusername/intelligent-release-management-scanner.git
+cd intelligent-release-management-scanner
 
-2. Install dependencies:
-```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-3. Set up your Google API key (FREE):
-
-**Get Your Free API Key:**
-- Go to: https://makersuite.google.com/app/apikey
-- Click "Create API Key"
-- Copy your key
-
-**Set the environment variable:**
-```bash
+# Set up your Google API key
 export GOOGLE_API_KEY='your-api-key-here'
+# Get your free key at: https://makersuite.google.com/app/apikey
 ```
 
-Or create a `.env` file:
-```
-GOOGLE_API_KEY=your-api-key-here
-```
-
-## Usage
-
-### 1. Prepare Your Inputs
-
-Place your files in the appropriate directories:
-
-- **Python source files**: `inputs/code/`
-- **Supporting documents** (PDF/text): `inputs/docs/`
-
-Example:
+### Run the UI
 ```bash
-inputs/
-├── code/
-│   ├── my_script.py
-│   └── utils.py
-└── docs/
-    ├── requirements.pdf
-    └── specifications.txt
+streamlit run app.py
 ```
 
-### 2. Run IRMS
+Open your browser at `http://localhost:8501`
 
-Execute the main script:
+### Run CLI Demo
 ```bash
-python main.py
+python demo.py
 ```
-
-The system will:
-1. Ingest all files
-2. Prompt you for a natural language query (e.g., "Add error handling and improve code quality")
-3. Analyze the code
-4. Apply AI-powered modifications
-5. Assess risks
-6. Generate outputs
-
-### 3. Review Outputs
-
-Check the `outputs/` directory:
-
-- **Modified code**: `outputs/modified_code/`
-- **Comprehensive report**: `outputs/reports/IRMS_Report_[timestamp].md`
-
-## Example Workflow
-
-```bash
-# 1. Add your Python files
-cp my_project/*.py inputs/code/
-
-# 2. Add documentation (optional)
-cp requirements.pdf inputs/docs/
-
-# 3. Run IRMS
-python main.py
-
-# When prompted, enter your request:
-# "Add comprehensive error handling and logging to all functions"
-
-# 4. Review results
-cat outputs/reports/IRMS_Report_*.md
-```
-
-## Configuration
-
-Edit `config/settings.py` to customize:
-
-- Risk thresholds and weights
-- Complexity thresholds
-- AI model settings
-- Directory paths
-
-## Key Features
-
-### Static Analysis
-- Cyclomatic complexity calculation
-- Maintainability index scoring
-- Code issue detection (missing docstrings, bare excepts, etc.)
-- Structure analysis (functions, classes, imports)
-
-### AI-Powered Modifications
-- Natural language query processing
-- Context-aware code improvements
-- Detailed change explanations
-- Best practices enforcement
-
-### Risk Assessment
-- Multi-factor risk scoring
-- Automated gate decisions (PASS/WARN/BLOCK)
-- Component-level risk breakdown
-- Actionable recommendations
-
-### Comprehensive Reporting
-- Executive summary
-- Detailed file-by-file analysis
-- Change statistics and diffs
-- Risk assessments and recommendations
-
-## Project Structure
-
-```
-irms_prototype/
-├── main.py                      # Main orchestrator
-├── requirements.txt             # Dependencies
-├── README.md                    # This file
-├── config/
-│   └── settings.py              # Configuration
-├── modules/                     # Core functionality
-│   ├── ingestion.py             # File reading & parsing
-│   ├── code_analyzer.py         # Static analysis
-│   ├── ai_engine.py             # AI modifications
-│   ├── change_detector.py       # Change tracking
-│   ├── risk_assessor.py         # Risk scoring
-│   └── report_generator.py      # Report creation
-├── utils/                       # Helper utilities
-│   ├── pdf_parser.py            # PDF text extraction
-│   └── ast_helper.py            # AST manipulation
-├── inputs/                      # User input files
-│   ├── code/                    # Python source files
-│   └── docs/                    # Supporting documents
-└── outputs/                     # Generated outputs
-    ├── modified_code/           # Updated Python files
-    └── reports/                 # Analysis reports
-```
-
-## Example Use Cases
-
-1. **Code Quality Improvement**
-   - Query: "Improve code quality and add comprehensive docstrings"
-   - System adds docstrings, improves naming, refactors complex functions
-
-2. **Error Handling Enhancement**
-   - Query: "Add proper error handling with try-except blocks and logging"
-   - System wraps risky operations, adds logging, handles exceptions
-
-3. **Security Hardening**
-   - Query: "Add input validation and security checks"
-   - System adds validation, sanitizes inputs, flags security issues
-
-4. **Performance Optimization**
-   - Query: "Optimize code for better performance"
-   - System identifies bottlenecks, suggests optimizations
-
-5. **Technical Debt Reduction**
-   - Query: "Refactor code to reduce complexity and improve maintainability"
-   - System simplifies complex functions, improves structure
-
-## Risk Gates Explained
-
-- **PASS (< 30 risk score)**: Low risk, safe to proceed with standard review
-- **WARN (30-70 risk score)**: Medium risk, additional review recommended
-- **BLOCK (> 70 risk score)**: High risk, requires thorough review and fixes
-
-## Limitations
-
-This is a **prototype** system with the following constraints:
-
-- No real CI/CD integration
-- No commercial security scanner integration
-- Limited to Python source files
-- AI modifications require manual review
-- Not production-ready for enterprise deployment
-
-## Future Enhancements
-
-Potential improvements for a production system:
-
-- Integration with real CI/CD pipelines
-- Support for multiple programming languages
-- Automated test generation
-- Integration with version control systems
-- Real-time collaboration features
-- Advanced security scanning
-- Performance profiling integration
-
-## Troubleshooting
-
-### No Python files found
-- Ensure `.py` files are in `inputs/code/`
-- Check file permissions
-
-### API key errors
-- Verify `ANTHROPIC_API_KEY` is set correctly
-- Check API key permissions
-
-### Module import errors
-- Run from the project root directory
-- Verify all dependencies are installed
-
-## License
-
-This is a prototype project for educational and demonstration purposes.
-
-## Author
-
-Senior Software Architect & AI Engineer
 
 ---
 
-For questions or issues, please refer to the system architecture diagram and module documentation.
+## 📖 Usage
+
+### Web UI Workflow
+
+1. **Upload Files**
+   - Upload Python source files (.py)
+   - Optionally upload documentation (requirements, specs)
+
+2. **Describe Changes**
+   - Enter a natural language query (e.g., "Add error handling and type hints")
+
+3. **Run Analysis**
+   - Click "Run IRMS Analysis"
+   - Wait for pipeline to complete (~30 seconds)
+
+4. **Review Results**
+   - View overall gate decision (PASS/WARN/BLOCK)
+   - Check risk score (0-100)
+   - See detailed file-by-file analysis
+   - Review AI-suggested changes
+
+5. **Download Outputs**
+   - Modified Python files
+   - Comprehensive report (Markdown or PDF)
+
+### CLI Workflow
+```bash
+# Place files in inputs/code/
+cp your_file.py inputs/code/
+
+# Run with custom query
+python main.py
+# Enter: "Add comprehensive error handling"
+
+# Check outputs
+cat outputs/reports/IRMS_Report_*.md
+cat outputs/modified_code/your_file.py
+```
+
+---
+
+## 🏗️ Architecture
+
+### Pipeline Stages
+```
+┌─────────────┐    ┌──────────────┐    ┌─────────────┐
+│  Ingestion  │───▶│   Analysis   │───▶│ AI Engine   │
+│  & Parsing  │    │  (Static)    │    │  (Gemini)   │
+└─────────────┘    └──────────────┘    └─────────────┘
+                                              │
+                                              ▼
+┌─────────────┐    ┌──────────────┐    ┌─────────────┐
+│   Report    │◀───│     Risk     │◀───│   Change    │
+│  Generator  │    │  Assessment  │    │  Detection  │
+└─────────────┘    └──────────────┘    └─────────────┘
+```
+
+### Core Modules
+
+| Module | Responsibility | Key Metrics |
+|--------|----------------|-------------|
+| **FileIngestion** | Parse Python files & docs | AST parsing, PDF extraction |
+| **CodeAnalyzer** | Static analysis | Complexity, maintainability, issues |
+| **AIEngine** | AI-driven improvements | Gemini API integration |
+| **ChangeDetector** | Track modifications | Line diffs, statistics |
+| **RiskAssessor** | Calculate risk score | 4-factor weighted scoring |
+| **ReportGenerator** | Create outputs | Markdown/PDF reports |
+
+---
+
+## 📊 Risk Assessment
+
+### Risk Formula
+```python
+total_risk = (
+    0.30 × complexity_risk +
+    0.20 × change_volume_risk +
+    0.30 × critical_function_risk +
+    0.20 × issue_severity_risk
+) × 100
+```
+
+### Gate Decisions
+
+| Risk Score | Gate Decision | Action |
+|------------|---------------|--------|
+| 0-30 | ✅ **PASS** | Low risk - standard review |
+| 30-70 | ⚠️ **WARN** | Medium risk - additional review |
+| 70-100 | 🛑 **BLOCK** | High risk - mandatory fixes |
+
+---
+
+## 🛠️ Configuration
+
+Edit `config/settings.py` to customize:
+```python
+# AI Model
+AI_MODEL = "models/gemini-2.5-flash"  # Free tier
+
+# Risk Thresholds
+RISK_GATES = {
+    'PASS': 30,
+    'WARN': 70,
+    'BLOCK': 100
+}
+
+# Risk Weights (must sum to 1.0)
+RISK_WEIGHTS = {
+    'complexity_change': 0.3,
+    'lines_changed': 0.2,
+    'critical_functions': 0.3,
+    'security_issues': 0.2
+}
+```
+
+---
+
+## 📁 Project Structure
+```
+intelligent-release-management-scanner/
+├── app.py                    # Streamlit UI
+├── main.py                   # CLI interface
+├── demo.py                   # Automated demo
+├── requirements.txt          # Dependencies
+├── README.md                 # This file
+│
+├── config/
+│   └── settings.py           # Configuration
+│
+├── modules/
+│   ├── ingestion.py          # File parsing
+│   ├── code_analyzer.py      # Static analysis
+│   ├── ai_engine.py          # AI integration
+│   ├── change_detector.py    # Diff tracking
+│   ├── risk_assessor.py      # Risk scoring
+│   └── report_generator.py   # Report creation
+│
+├── utils/
+│   ├── pdf_parser.py         # PDF text extraction
+│   └── ast_helper.py         # AST utilities
+│
+├── inputs/
+│   ├── code/                 # Python source files
+│   └── docs/                 # Documentation
+│
+└── outputs/
+    ├── modified_code/        # AI-improved code
+    └── reports/              # Analysis reports
+```
+
+---
+
+
+<img width="1918" height="872" alt="image" src="https://github.com/user-attachments/assets/f7547212-1a36-4495-8e8c-9dec5ea68ed1" />
+
+<img width="1918" height="903" alt="image" src="https://github.com/user-attachments/assets/8fc9ee63-fd3e-4c03-94ed-fb0899b572be" />
+
+
+## 🧪 Example Use Cases
+
+### 1. Code Quality Improvement
+```
+Query: "Add docstrings and type hints to all functions"
+Result: AI adds comprehensive documentation and PEP 484 type annotations
+```
+
+### 2. Error Handling Enhancement
+```
+Query: "Add try-except blocks and logging for error handling"
+Result: AI wraps risky operations with proper exception handling
+```
+
+### 3. Security Hardening
+```
+Query: "Add input validation and sanitization"
+Result: AI adds validation checks and flags security concerns
+```
+
+### 4. Performance Optimization
+```
+Query: "Optimize code for better performance"
+Result: AI suggests algorithmic improvements and refactoring
+```
+
+---
+
+
+### Development Setup
+
+
+## 🐛 Known Limitations
+
+- **Python-only**: Currently supports Python files only
+- **Basic SAST**: Pattern-based detection (not enterprise-grade)
+- **No Auth**: Prototype-level (no user authentication)
+- **Single-process**: Not optimized for 1000+ files
+- **AI Dependency**: Requires Google API key (free tier available)
+
+
+
+##  Contact
+
+**Your Name**  
+- GitHub: https://github.com/yazhinibabu
+- LinkedIn: https://www.linkedin.com/in/yazhini-babu/
+- Email: shakthiyazhinibabu@gmail.com
+
+
+#python
+#ai
+#code-analysis
+#release-management
+#static-analysis
+#gemini
+#risk-assessment
+#code-quality
+#ci-cd
+#streamlit
+#automation
+#machine-learning
+#devops
+#software-engineering
+#code-review
