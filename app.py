@@ -605,7 +605,7 @@ def main():
                 if ai_result.get('changes_made'):
                     st.subheader("AI-Suggested Changes")
                     for i, change in enumerate(ai_result['changes_made'], 1):
-                        st.write(f"{i}. {change}")
+                        st.write(f"- {change}")
                 
                 # Issues
                 issues = analysis.get('issues', [])
