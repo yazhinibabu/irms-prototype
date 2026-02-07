@@ -1,18 +1,21 @@
 """
 AI-assisted code analysis and modification engine using Google Gemini
+Enhanced with optional AI, rate limiting, and fallback mechanisms
 """
 from typing import Dict, List, Optional, Any
 import os
+import time
 from pathlib import Path
-from config.settings import AI_MODEL, MAX_TOKENS, TEMPERATURE
+from typing import Optional
+
 
 # Import Google Generative AI
 try:
     import google.generativeai as genai  # type: ignore
+    GEMINI_AVAILABLE = True
 except ImportError:
-    raise ImportError(
-        "google-generativeai not installed. Run: pip install google-generativeai"
-    )
+    GEMINI_AVAILABLE = False
+    print("Warning: google-generativeai not installed. AI features disabled.")
 
 # Try to load from .env file if present
 try:
@@ -27,18 +30,93 @@ except ImportError:
 class AIEngine:
     """AI-powered code analysis and modification using Google Gemini."""
     
-    def __init__(self):
-        """Initialize the AI engine with Gemini API."""
+    def __init__(
+        self,
+        enabled: bool = True,
+        optional: bool = True,
+        max_retries: int = 3,
+        retry_delay: float = 2.0,
+        rate_limit_delay: float = 1.0
+    ):
+        """
+        Initialize the AI engine with Gemini API.
+        
+        Args:
+            enabled: Enable/disable AI processing (NEW)
+            optional: AI is optional - fallback to original if fails (NEW)
+            max_retries: Maximum retry attempts for API calls (NEW)
+            retry_delay: Delay between retries in seconds (NEW)
+            rate_limit_delay: Delay between API calls for rate limiting (NEW)
+        """
+        self.enabled = enabled
+        self.optional = optional
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+        self.rate_limit_delay = rate_limit_delay
+        
+        self.model: Optional[Any] = None
+        self.conversation_history: List[Dict] = []
+        self.last_api_call_time = 0
+        self.api_call_count = 0
+        
+        # Initialize AI if enabled and available
+        if self.enabled and GEMINI_AVAILABLE:
+            self._initialize_ai()
+        else:
+            print("ℹ AI engine disabled or unavailable")
+    
+    def _initialize_ai(self):
+        """Initialize Gemini API (NEW - separated from __init__)."""
         api_key = os.environ.get('GOOGLE_API_KEY')
         if not api_key:
-            raise ValueError(
-                "GOOGLE_API_KEY environment variable not set. "
-                "Get your free API key at https://makersuite.google.com/app/apikey"
-            )
-        
-        genai.configure(api_key=api_key)  # type: ignore
-        self.model = genai.GenerativeModel(AI_MODEL)  # type: ignore
-        self.conversation_history: List[Dict] = []
+            if self.optional:
+                print("⚠ GOOGLE_API_KEY not set. AI features disabled (fallback mode).")
+                self.enabled = False
+            else:
+                raise ValueError(
+                    "GOOGLE_API_KEY environment variable not set. "
+                    "Get your free API key at https://makersuite.google.com/app/apikey"
+                )
+        else:
+            try:
+                # Import AI_MODEL from settings
+                try:
+                    from config.settings import AI_MODEL, MAX_TOKENS, TEMPERATURE
+                except:
+                    AI_MODEL = "models/gemini-2.5-flash"
+                    MAX_TOKENS = 4000
+                    TEMPERATURE = 0.7
+                
+                genai.configure(api_key=api_key)  # type: ignore
+                self.model = genai.GenerativeModel(AI_MODEL)  # type: ignore
+                print("✓ AI engine initialized with Gemini")
+            except Exception as e:
+                if self.optional:
+                    print(f"⚠ AI initialization failed: {e}. Fallback mode enabled.")
+                    self.enabled = False
+                else:
+                    raise
+    
+    def _rate_limit_wait(self):
+        """Implement rate limiting (NEW)."""
+        elapsed = time.time() - self.last_api_call_time
+        if elapsed < self.rate_limit_delay:
+            time.sleep(self.rate_limit_delay - elapsed)
+        self.last_api_call_time = time.time()
+    
+    def _retry_with_backoff(self, func, *args, **kwargs):
+        """Retry function with exponential backoff (NEW)."""
+        for attempt in range(self.max_retries):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                if attempt < self.max_retries - 1:
+                    delay = self.retry_delay * (2 ** attempt)  # Exponential backoff
+                    print(f"⚠ API call failed (attempt {attempt + 1}/{self.max_retries}). "
+                          f"Retrying in {delay}s... Error: {e}")
+                    time.sleep(delay)
+                else:
+                    raise
     
     def analyze_and_modify(
         self,
@@ -48,42 +126,72 @@ class AIEngine:
         static_analysis: Dict,
         context_docs: str = ""
     ) -> Dict[str, Any]:
-        """
-        Use AI to analyze code and generate modifications based on user query.
-        
-        Args:
-            source_code: Original Python source code
-            filename: Name of the file
-            user_query: User's natural language request
-            static_analysis: Results from static analysis
-            context_docs: Supporting documentation context
-            
-        Returns:
-            Dictionary with modified code and explanation
-        """
+
+        # 1️⃣ AI globally disabled
+        if not self.enabled:
+            return self._fallback_response(source_code, "AI is disabled")
+
+        # 2️⃣ AI enabled but model not initialized
+        if self.model is None:
+            return self._fallback_response(
+                source_code,
+                "AI model is not initialized"
+            )
+        # 3️⃣ Rate limiting (safe now)
+        self._rate_limit_wait()
+
+        # 4️⃣ Build prompt
         prompt = self._build_analysis_prompt(
             source_code, filename, user_query, static_analysis, context_docs
         )
         
         try:
-            # Call Gemini API
-            response = self.model.generate_content(prompt)  # type: ignore
+            # Call API with retry logic
+            response = self._retry_with_backoff(
+                self.model.generate_content, 
+                prompt
+            )
+
+            if response is None:
+                raise ValueError("AI response is None.")
+            
             response_text = response.text
             
             if not response_text:
                 raise ValueError("Received empty response from AI model.")
             
+            self.api_call_count += 1
             result = self._parse_ai_response(response_text, source_code)
             return result
             
         except Exception as e:
-            print(f"AI analysis error: {e}")
-            return {
-                'modified_code': source_code,
-                'changes_made': [],
-                'explanation': f"Error during AI analysis: {str(e)}",
-                'success': False
-            }
+            print(f"⚠ AI analysis error for {filename}: {e}")
+            
+            if self.optional:
+                # Fallback to original code
+                return self._fallback_response(source_code, str(e))
+            else:
+                # Re-raise if AI is not optional
+                raise
+    
+    def _fallback_response(self, source_code: str, reason: str) -> Dict[str, Any]:
+        """
+        Generate fallback response when AI is unavailable (NEW).
+        
+        Args:
+            source_code: Original code
+            reason: Reason for fallback
+            
+        Returns:
+            Dictionary with original code preserved
+        """
+        return {
+            'modified_code': source_code,
+            'changes_made': [],
+            'explanation': f"AI analysis skipped: {reason}. Original code preserved.",
+            'success': False,
+            'fallback': True  # NEW flag
+        }
     
     def _build_analysis_prompt(
         self,
@@ -173,7 +281,8 @@ EXPLANATION:
             'modified_code': original_code,
             'changes_made': [],
             'explanation': '',
-            'success': True
+            'success': True,
+            'fallback': False
         }
         
         if 'MODIFIED CODE:' in response_text:
@@ -221,4 +330,12 @@ EXPLANATION:
             'number_of_changes': len(changes_made),
             'original_lines': original_lines,
             'modified_lines': modified_lines
+        }
+    
+    def get_stats(self) -> Dict:
+        """Get AI engine statistics (NEW)."""
+        return {
+            'enabled': self.enabled,
+            'api_calls': self.api_call_count,
+            'fallback_mode': not self.enabled and self.optional
         }

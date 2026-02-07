@@ -1,11 +1,11 @@
 """
-AST manipulation and analysis utilities
+AST (Abstract Syntax Tree) parsing utilities
 """
 import ast
-from typing import Dict, List, Any
+from typing import Dict, List, Optional, Any
 
 
-def parse_python_file(file_path: str) -> ast.Module:
+def parse_python_file(file_path: str) -> Optional[ast.Module]:
     """
     Parse a Python file into an AST.
     
@@ -13,16 +13,23 @@ def parse_python_file(file_path: str) -> ast.Module:
         file_path: Path to Python file
         
     Returns:
-        AST Module node
+        AST Module or None if parsing fails
     """
-    with open(file_path, 'r', encoding='utf-8') as f:
-        source_code = f.read()
-    return ast.parse(source_code, filename=file_path)
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            source_code = f.read()
+        return ast.parse(source_code, filename=file_path)
+    except SyntaxError as e:
+        print(f"⚠ Syntax error in {file_path}: {e}")
+        return None
+    except Exception as e:
+        print(f"⚠ Error parsing {file_path}: {e}")
+        return None
 
 
 def get_function_info(tree: ast.Module) -> List[Dict[str, Any]]:
     """
-    Extract information about all functions in the AST.
+    Extract function information from AST.
     
     Args:
         tree: AST Module
@@ -38,9 +45,8 @@ def get_function_info(tree: ast.Module) -> List[Dict[str, Any]]:
                 'name': node.name,
                 'lineno': node.lineno,
                 'args': [arg.arg for arg in node.args.args],
-                'returns': ast.unparse(node.returns) if node.returns else None,
                 'docstring': ast.get_docstring(node),
-                'decorators': [ast.unparse(dec) for dec in node.decorator_list]
+                'decorators': [d.id if isinstance(d, ast.Name) else str(d) for d in node.decorator_list]
             })
     
     return functions
@@ -48,7 +54,7 @@ def get_function_info(tree: ast.Module) -> List[Dict[str, Any]]:
 
 def get_class_info(tree: ast.Module) -> List[Dict[str, Any]]:
     """
-    Extract information about all classes in the AST.
+    Extract class information from AST.
     
     Args:
         tree: AST Module
@@ -60,13 +66,17 @@ def get_class_info(tree: ast.Module) -> List[Dict[str, Any]]:
     
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
-            methods = [n.name for n in node.body if isinstance(n, ast.FunctionDef)]
+            methods = [
+                n.name for n in node.body 
+                if isinstance(n, ast.FunctionDef)
+            ]
+            
             classes.append({
                 'name': node.name,
                 'lineno': node.lineno,
-                'bases': [ast.unparse(base) for base in node.bases],
                 'methods': methods,
-                'docstring': ast.get_docstring(node)
+                'docstring': ast.get_docstring(node),
+                'bases': [b.id if isinstance(b, ast.Name) else str(b) for b in node.bases]
             })
     
     return classes
@@ -74,24 +84,24 @@ def get_class_info(tree: ast.Module) -> List[Dict[str, Any]]:
 
 def get_imports(tree: ast.Module) -> List[str]:
     """
-    Extract all import statements.
+    Extract import statements from AST.
     
     Args:
         tree: AST Module
         
     Returns:
-        List of import strings
+        List of import names
     """
     imports = []
     
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                imports.append(f"import {alias.name}")
+                imports.append(alias.name)
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ''
             for alias in node.names:
-                imports.append(f"from {module} import {alias.name}")
+                imports.append(f"{module}.{alias.name}" if module else alias.name)
     
     return imports
 
@@ -108,14 +118,14 @@ def count_lines_of_code(source_code: str) -> Dict[str, int]:
     """
     lines = source_code.split('\n')
     
-    total_lines = len(lines)
-    blank_lines = sum(1 for line in lines if not line.strip())
-    comment_lines = sum(1 for line in lines if line.strip().startswith('#'))
-    code_lines = total_lines - blank_lines - comment_lines
+    total = len(lines)
+    blank = sum(1 for line in lines if not line.strip())
+    comments = sum(1 for line in lines if line.strip().startswith('#'))
+    code = total - blank - comments
     
     return {
-        'total': total_lines,
-        'code': code_lines,
-        'blank': blank_lines,
-        'comments': comment_lines
+        'total': total,
+        'code': code,
+        'comments': comments,
+        'blank': blank
     }
