@@ -6,7 +6,6 @@ from typing import Dict, List, Optional, Any
 import os
 import time
 from pathlib import Path
-from typing import Optional
 
 
 # Import Google Generative AI
@@ -56,7 +55,7 @@ class AIEngine:
         
         self.model: Optional[Any] = None
         self.conversation_history: List[Dict] = []
-        self.last_api_call_time = 0
+        self.last_api_call_time = 0.0
         self.api_call_count = 0
         
         # Initialize AI if enabled and available
@@ -124,9 +123,25 @@ class AIEngine:
         filename: str,
         user_query: str,
         static_analysis: Dict,
-        context_docs: str = ""
+        context_docs: str = "",
+        language_context: str = "The following code is written in Python."
     ) -> Dict[str, Any]:
-
+        """
+        Use AI to analyze code and generate modifications based on user query.
+        
+        Args:
+            source_code: Original source code
+            filename: Name of the file
+            user_query: User's natural language request
+            static_analysis: Results from static analysis
+            context_docs: Supporting documentation context
+            language_context: Language-specific context (NEW)
+            
+        Returns:
+            Dictionary with modified code and explanation
+            
+        NOTE: Now supports language-agnostic prompts
+        """
         # 1️⃣ AI globally disabled
         if not self.enabled:
             return self._fallback_response(source_code, "AI is disabled")
@@ -137,12 +152,18 @@ class AIEngine:
                 source_code,
                 "AI model is not initialized"
             )
+        
         # 3️⃣ Rate limiting (safe now)
         self._rate_limit_wait()
 
         # 4️⃣ Build prompt
         prompt = self._build_analysis_prompt(
-            source_code, filename, user_query, static_analysis, context_docs
+            source_code, 
+            filename, 
+            user_query, 
+            static_analysis, 
+            context_docs, 
+            language_context
         )
         
         try:
@@ -199,14 +220,17 @@ class AIEngine:
         filename: str,
         user_query: str,
         static_analysis: Dict,
-        context_docs: str
+        context_docs: str,
+        language_context: str
     ) -> str:
         """Build a comprehensive prompt for Gemini."""
         
         issues_summary = self._format_issues(static_analysis.get('issues', []))
         complexity_info = static_analysis.get('complexity', {})
         
-        prompt = f"""You are a senior software engineer performing code review and improvement.
+        prompt = f"""{language_context}
+
+You are a senior software engineer performing code review and improvement.
 
 **File being analyzed:** {filename}
 
@@ -214,7 +238,7 @@ class AIEngine:
 {user_query}
 
 **Original Source Code:**
-```python
+```
 {source_code}
 ```
 
@@ -231,15 +255,15 @@ class AIEngine:
 **Your Task:**
 1. Analyze the code based on the user's request: "{user_query}"
 2. Identify specific improvements needed
-3. Generate the complete modified Python code
+3. Generate the complete modified code
 4. Explain each change you made and why
 
 **Response Format:**
 Please structure your response EXACTLY as follows:
 
 MODIFIED CODE:
-```python
-[Complete modified Python code here]
+```
+[Complete modified code here]
 ```
 
 CHANGES MADE:
@@ -252,9 +276,9 @@ EXPLANATION:
 
 **Important Guidelines:**
 - Maintain the original functionality unless the user explicitly requests changes
-- Follow Python best practices (PEP 8)
+- Follow language best practices
 - Add proper error handling where appropriate
-- Include docstrings for functions/classes if missing
+- Include documentation/comments if missing
 - Optimize for readability and maintainability
 - Be specific about what you changed and why
 """
@@ -326,7 +350,7 @@ EXPLANATION:
         
         return {
             'lines_changed': abs(modified_lines - original_lines),
-            'change_percentage': round(abs(modified_lines - original_lines) / original_lines * 100, 2),
+            'change_percentage': round(abs(modified_lines - original_lines) / original_lines * 100, 2) if original_lines > 0 else 0,
             'number_of_changes': len(changes_made),
             'original_lines': original_lines,
             'modified_lines': modified_lines

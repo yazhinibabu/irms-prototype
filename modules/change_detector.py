@@ -1,5 +1,6 @@
 """
 Change detection and tracking module
+Enhanced with language-agnostic text diff support
 """
 import difflib
 from typing import Dict, List, Tuple
@@ -18,7 +19,27 @@ class ChangeDetector:
         modified_code: str
     ) -> Dict:
         """
-        Detect and categorize changes between original and modified code.
+        Backward-compatible wrapper for AST-based Python diff.
+        Uses detect_text_diff internally.
+        
+        Args:
+            filename: Name of the file
+            original_code: Original source code
+            modified_code: Modified source code
+            
+        Returns:
+            Dictionary containing change analysis
+        """
+        return self.detect_text_diff(filename, original_code, modified_code)
+    
+    def detect_text_diff(
+        self,
+        filename: str,
+        original_code: str,
+        modified_code: str
+    ) -> Dict:
+        """
+        Language-agnostic text-based diff detection.
         
         Args:
             filename: Name of the file

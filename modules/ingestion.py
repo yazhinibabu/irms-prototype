@@ -2,11 +2,15 @@
 File ingestion and parsing module
 Enhanced with project-level ingestion and .gitignore support
 """
+from importlib.metadata import files
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 import ast
 import fnmatch
 import os
+
+SUPPORTED_EXTENSIONS = {".py", ".js", ".java", ".ts"}
+
 
 # Import with proper type checking
 try:
@@ -63,6 +67,8 @@ class FileIngestion:
         self.python_asts: Dict[str, ast.Module] = {}
         self.documents: Dict[str, str] = {}
         self.file_paths: Dict[str, Path] = {}  # Track original paths (NEW)
+        self.file_languages: Dict[str, str] = {}
+
         
         # Setup ignore patterns (NEW)
         self.ignore_patterns = ignore_patterns or []
@@ -107,55 +113,109 @@ class FileIngestion:
     
     def ingest_python_files(self) -> int:
         """
-        Read and parse all Python files.
-        
+        Read and parse all supported source files (not just Python).
+    
         Returns:
             Number of files ingested
-            
-        NOTE: Now supports both flat and recursive modes
+        
+        NOTE: Despite the name, now supports all registered languages
         """
-        if self.recursive:
-            py_files = self._find_python_files_recursive(self.code_dir)
-        else:
-            py_files = list(self.code_dir.glob("*.py"))
-        
-        for py_file in py_files:
-            # Skip if should be ignored
-            if self._should_ignore(py_file):
-                continue
-            
-            # Skip if too large
-            if self._is_file_too_large(py_file):
-                print(f"⚠ Skipping {py_file.name}: File too large (>{self.max_file_size/1024/1024:.1f}MB)")
-                continue
-            
-            try:
-                with open(py_file, 'r', encoding='utf-8') as f:
-                    source_code = f.read()
-                
-                # Use relative path as key for better organization
-                relative_path = py_file.relative_to(self.code_dir) if self.recursive else py_file.name
-                key = str(relative_path)
-                
-                self.python_files[key] = source_code
-                self.file_paths[key] = py_file
-                
-                # Parse AST
-                try:
-                    parsed_ast = ast.parse(source_code, filename=str(py_file))
-                    self.python_asts[key] = parsed_ast
-                except SyntaxError as e:
-                    print(f"⚠ Syntax error in {key}: {e}")
-                    # Skip files with syntax errors - don't add to AST dict
-                    continue
-                
-                print(f"✓ Ingested: {key}")
-                
-            except Exception as e:
-                print(f"✗ Error ingesting {py_file.name}: {e}")
-        
-        return len(self.python_files)
+        from modules.language_registry import is_supported_file
     
+        if self.recursive:
+            # Get all files recursively
+            all_files = self._find_files_recursive(self.code_dir)
+        else:
+            all_files = list(self.code_dir.glob("*"))
+    
+        for file_path in all_files:
+            # Skip directories
+            if file_path.is_dir():
+                continue
+        
+            # Skip if not supported
+            if not is_supported_file(file_path.name):
+                continue
+        
+            # Skip if should be ignored
+            if self._should_ignore(file_path):
+                continue
+        
+            # Skip if too large
+            if self._is_file_too_large(file_path):
+                print(f"⚠ Skipping {file_path.name}: File too large (>{self.max_file_size/1024/1024:.1f}MB)")
+                continue
+        
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    source_code = f.read()
+            
+                # Use relative path as key for better organization
+                relative_path = file_path.relative_to(self.code_dir) if self.recursive else file_path.name
+                key = str(relative_path)
+            
+                self.python_files[key] = source_code
+                self.file_paths[key] = file_path
+            
+                # Parse if possible (Python only has AST)
+                if file_path.suffix == '.py':
+                    try:
+                        parsed_ast = ast.parse(source_code, filename=str(file_path))
+                        self.python_asts[key] = parsed_ast
+                    except SyntaxError as e:
+                        print(f"⚠ Syntax error in {key}: {e}")
+                        continue
+            
+                print(f"✓ Ingested: {key}")
+            
+            except Exception as e:
+                print(f"✗ Error ingesting {file_path.name}: {e}")
+    
+        return len(self.python_files)
+
+
+    def _find_files_recursive(
+        self, 
+        directory: Path, 
+        depth: int = 0, 
+        max_depth: int = 10
+    ) -> List[Path]:
+        """
+        Recursively find all supported files in directory tree.
+    
+        Args:
+            directory: Directory to search
+            depth: Current recursion depth
+            max_depth: Maximum recursion depth
+        
+        Returns:
+            List of file paths
+        """
+        from modules.language_registry import is_supported_file
+    
+        if depth > max_depth:
+            return []
+    
+        files: List[Path] = []
+    
+        try:
+            for item in directory.iterdir():
+                # Skip ignored items
+                if self._should_ignore(item):
+                    continue
+            
+                if item.is_file() and is_supported_file(item.name):
+                    files.append(item)
+                elif item.is_dir():
+                    files.extend(
+                        self._find_files_recursive(item, depth + 1, max_depth)
+                    )
+        except PermissionError:
+            print(f"⚠ Permission denied: {directory}")
+    
+        return files
+
+
     def _find_python_files_recursive(
         self, 
         directory: Path, 
@@ -184,7 +244,7 @@ class FileIngestion:
                 if self._should_ignore(item):
                     continue
                 
-                if item.is_file() and item.suffix == '.py':
+                if item.is_file() and item.suffix in SUPPORTED_EXTENSIONS:
                     py_files.append(item)
                 elif item.is_dir():
                     py_files.extend(
